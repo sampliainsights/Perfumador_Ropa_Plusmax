@@ -664,7 +664,7 @@ const SENT_COLORS = { Positivo: C.dusk, Neutro: C.neutral, Negativo: C.rasp };
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const state = {
-  rows: [], headers: {}, source: '', liveErrors: [], excluded: 0,
+  rows: [], headers: {}, source: '', liveErrors: [], excluded: 0, total: 0,
   f: { compra: 'all', gen: 'all', age: 'all' },
   compare: true,
   vb: { q: '', sent: 'all', theme: null, limit: 12 }
@@ -804,7 +804,9 @@ function buildRows(matrix) {
 
   const num = v => { const n = parseFloat(String(v ?? '').replace(',', '.')); return (n >= 1 && n <= 5) ? n : null; };
   const rows = []; state.excluded = 0;
-  matrix.slice(hi + 1).forEach(r => {
+  const body = matrix.slice(hi + 1);
+  state.total = body.length;
+  body.forEach(r => {
     const get = k => idx[k] == null ? '' : String(r[idx[k]] ?? '').trim();
     if (CONFIG.notReceived && CONFIG.notReceived.test(norm(get('porque')))) { state.excluded++; return; }
     const o = { ts: get('ts'), porque: emptyAnswer(get('porque')) ? '' : get('porque'), cat: get('cat') };
@@ -844,7 +846,7 @@ async function loadData() {
       const url = src.url(CONFIG.gid);
       try {
         const rows = buildRows(toMatrix(await fetchText(url)));
-        return { src, rows, excluded: state.excluded };
+        return { src, rows, excluded: state.excluded, total: state.total };
       } catch (e) {
         errors.push(src.name + ': ' + e.message);
         console.warn('[datos] ' + src.name + ' falló (' + url + '):', e.message);
@@ -853,9 +855,9 @@ async function loadData() {
     }));
     const best = tries.filter(Boolean).sort((a, b) => b.rows.length - a.rows.length)[0];
     if (best) {
-      state.rows = best.rows; state.excluded = best.excluded; state.source = 'live';
+      state.rows = best.rows; state.excluded = best.excluded; state.total = best.total; state.source = 'live';
       console.info('[datos] Fuente usada: ' + best.src.name + ' (' + best.rows.length + ' respuestas)');
-      setStatus('live', `${state.rows.length} respuestas`);
+      setStatus('live', `${state.total} respuestas`);
       return;
     }
   } else errors.push('protocolo ' + location.protocol + ' sin acceso a la red');
@@ -863,7 +865,7 @@ async function loadData() {
   const snap = $('#snapshot').textContent.trim();
   state.rows = buildRows(toMatrix(snap)); state.source = 'local';
   console.error('[datos] Sin conexión con la hoja; se muestra la copia local.', errors);
-  setStatus('local', `${state.rows.length} respuestas`);
+  setStatus('local', `${state.total} respuestas`);
 }
 function footNote() {
   const el = $('#footSrc'); if (!el) return;
@@ -1210,7 +1212,7 @@ function renderInsights() {
 function renderHero() {
   const sel = rowsSel(), all = rowsAll();
   const si = all.filter(r => r.compra === 'Sí').length, n = all.filter(r => r.compra).length;
-  $('#factN').textContent = sel.length + (sel.length !== state.rows.length ? ` de ${state.rows.length}` : '');
+  $('#factN').textContent = state.total;
   $('#factBuy').textContent = pct(si, n);
   $$('[data-seal-n]').forEach(el => el.textContent = sel.length);
   const nSi = all.filter(r => r.compra === 'Sí').length, nNo = all.filter(r => r.compra === 'No').length;
