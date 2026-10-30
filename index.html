@@ -855,7 +855,7 @@ async function loadData() {
     if (best) {
       state.rows = best.rows; state.excluded = best.excluded; state.source = 'live';
       console.info('[datos] Fuente usada: ' + best.src.name + ' (' + best.rows.length + ' respuestas)');
-      setStatus('live', `Datos en vivo de la hoja (${state.rows.length} respuestas${exNote()})`);
+      setStatus('live', `${state.rows.length} respuestas`);
       return;
     }
   } else errors.push('protocolo ' + location.protocol + ' sin acceso a la red');
@@ -863,13 +863,11 @@ async function loadData() {
   const snap = $('#snapshot').textContent.trim();
   state.rows = buildRows(toMatrix(snap)); state.source = 'local';
   console.error('[datos] Sin conexión con la hoja; se muestra la copia local.', errors);
-  setStatus('local', `Copia local del ${CONFIG.snapshotDate} (${state.rows.length} respuestas${exNote()}). Sin conexión con la hoja.`);
+  setStatus('local', `${state.rows.length} respuestas`);
 }
-const exNote = () => state.excluded ? `; ${state.excluded} excluidas por no haber recibido el producto` : '';
 function footNote() {
   const el = $('#footSrc'); if (!el) return;
-  el.textContent = 'Samplia Insights. Datos de la hoja de respuestas de la encuesta.' +
-    (state.excluded ? ` Se excluyen ${state.excluded} respuestas de personas que indican no haber recibido o probado el producto.` : '');
+  el.textContent = 'Samplia Insights. Datos de la hoja de respuestas de la encuesta.';
 }
 function setStatus(kind, text) { const el = $('#status'); el.className = 'status ' + kind; el.lastElementChild.textContent = text; }
 
